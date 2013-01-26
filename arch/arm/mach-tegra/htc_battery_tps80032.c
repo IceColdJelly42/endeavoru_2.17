@@ -335,6 +335,7 @@ static void usb_status_notifier_func(int online)
 		if ( !!(get_kernel_flag() & ALL_AC_CHARGING) ) {
 			BATT_LOG("Debug flag is set to force AC charging, fake as AC");
 			htc_batt_info.rep.charging_source = CHARGER_AC;
+                } else {
 		if(fast_charge){
                     BATT_LOG("fast_charge is set to force AC charging");  
                     htc_batt_info.rep.charging_source = CHARGER_AC;
