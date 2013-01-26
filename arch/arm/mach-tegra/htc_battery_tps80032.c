@@ -105,6 +105,8 @@ enum {
 	ATTR_QB_REASON,
 };
 
+static int fast_charge = 0;
+
 #if WK_MBAT_IN
 static int is_mbat_in;
 #endif
@@ -333,8 +335,12 @@ static void usb_status_notifier_func(int online)
 		if ( !!(get_kernel_flag() & ALL_AC_CHARGING) ) {
 			BATT_LOG("Debug flag is set to force AC charging, fake as AC");
 			htc_batt_info.rep.charging_source = CHARGER_AC;
-		} else
-			htc_batt_info.rep.charging_source = CHARGER_USB;
+		if(fast_charge){
+                    BATT_LOG("fast_charge is set to force AC charging");  
+                    htc_batt_info.rep.charging_source = CHARGER_AC;
+                } else 
+                    htc_batt_info.rep.charging_source = CHARGER_USB;
+                }
 #if WK_IS_CABLE_IN
 		htc_batt_info.is_cable_in = 1;
 #endif
@@ -1184,6 +1190,31 @@ static struct dev_pm_ops htc_battery_tps80032_pm_ops = {
 	.complete = htc_battery_complete,
 };
 
+static ssize_t
+fast_charge_show(struct device *dev,
+        struct device_attribute *attr,
+        char *buf)
+{
+    return sprintf(buf, "%d\n", fast_charge);
+}
+
+static ssize_t
+fast_charge_store(struct device *dev,
+        struct device_attribute *attr, const char *buf, size_t size)
+{
+    int value;
+
+    value = ((int) simple_strtoul(buf, NULL, 10));
+    if(value == 0 || value == 1){
+        fast_charge = value;
+        BATT_LOG("set fast_charge %d", fast_charge);
+    }
+    else
+        return -EINVAL;
+
+    return size;
+}
+
 #if WK_IS_CABLE_IN
 extern int (*tps80031_is_cable_in)(void);
 static int is_cable_in(void)
@@ -1202,6 +1233,7 @@ static struct device_attribute tps80032_batt_attrs[] = {
 	__ATTR(hboot_curr, S_IRUGO, tps80032_first_batt_show_attributes, NULL),
 	__ATTR(hboot_temp, S_IRUGO, tps80032_first_batt_show_attributes, NULL),
 	__ATTR(quickboot_low_power_boot, S_IWUSR, NULL, tps80032_qb_store_attributes),
+        __ATTR(fast_charge, S_IRUGO|S_IWUSR, fast_charge_show, fast_charge_store),
 	};
 
 static ssize_t tps80032_first_batt_show_attributes(struct device *dev,
